@@ -120,7 +120,15 @@ endif()
 
 # Define BUILD_ELUNA if need
 if (BUILD_ELUNA)
-  add_definitions(-DBUILD_ELUNA -DCLASSIC -DCMANGOS)
+  if (${CMAKE_PROJECT_NAME} MATCHES "Classic")
+    add_definitions(-DBUILD_ELUNA -DCLASSIC)
+endif()
+  if (${CMAKE_PROJECT_NAME} MATCHES "TBC")
+    add_definitions(-DBUILD_ELUNA -DTBC)
+  endif()
+  if (${CMAKE_PROJECT_NAME} MATCHES "WoTLK")
+    add_definitions(-DBUILD_ELUNA -DWOTLK)
+  endif()
 endif()
 
 # Define Core
@@ -158,6 +166,7 @@ target_link_libraries(${LIBRARY_NAME}
   PRIVATE shared
   PRIVATE Detour
   PRIVATE g3dlite
+  PRIVATE lualib
 )
 
 target_include_directories(${LIBRARY_NAME}
