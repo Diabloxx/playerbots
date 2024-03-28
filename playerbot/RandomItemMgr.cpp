@@ -1393,36 +1393,36 @@ void RandomItemMgr::BuildItemInfoCache()
         cacheInfo->itemSpec = (ItemSpecType)itemSpec;
 
         // save cache
-        static SqlStatementID delCache;
-        static SqlStatementID insertCache;
-
-        SqlStatement stmt = CharacterDatabase.CreateStatement(delCache, "DELETE FROM ai_playerbot_item_info_cache WHERE id = ?");
-        stmt.PExecute(proto->ItemId);
-
-        stmt = CharacterDatabase.CreateStatement(insertCache, "INSERT INTO ai_playerbot_item_info_cache (id, quality, slot, source, sourceId, team, faction, factionRepRank, minLevel, "
-            "scale_1, scale_2, scale_3, scale_4, scale_5, scale_6, scale_7, scale_8, scale_9, scale_10, scale_11, scale_12, scale_13, scale_14, scale_15, "
-            "scale_16, scale_17, scale_18, scale_19, scale_20, scale_21, scale_22, scale_23, scale_24, scale_25, scale_26, scale_27, scale_28, scale_29, scale_30, scale_31, scale_32)"
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-
-        stmt.addUInt32(cacheInfo->itemId);
-        stmt.addUInt32(cacheInfo->quality);
-        stmt.addUInt32(cacheInfo->slot);
-        stmt.addUInt32(cacheInfo->source);
-        stmt.addUInt32(cacheInfo->sourceId);
-        stmt.addUInt32(cacheInfo->team);
-        stmt.addUInt32(cacheInfo->repFaction);
-        stmt.addUInt32(cacheInfo->repRank);
-        stmt.addUInt32(cacheInfo->minLevel);
-
-        for (int i = 1; i <= MAX_STAT_SCALES; ++i)
-        {
-            if (cacheInfo->weights[i])
-                stmt.addUInt32(cacheInfo->weights[i]);
-            else
-                stmt.addUInt32(0);
-        }
-
-        stmt.Execute();
+//        static SqlStatementID delCache;
+//        static SqlStatementID insertCache;
+//
+//        SqlStatement stmt = CharacterDatabase.CreateStatement(delCache, "DELETE FROM ai_playerbot_item_info_cache WHERE id = ?");
+//        stmt.PExecute(proto->ItemId);
+//
+//        stmt = CharacterDatabase.CreateStatement(insertCache, "INSERT INTO ai_playerbot_item_info_cache (id, quality, slot, source, sourceId, team, faction, factionRepRank, minLevel, "
+//            "scale_1, scale_2, scale_3, scale_4, scale_5, scale_6, scale_7, scale_8, scale_9, scale_10, scale_11, scale_12, scale_13, scale_14, scale_15, "
+//            "scale_16, scale_17, scale_18, scale_19, scale_20, scale_21, scale_22, scale_23, scale_24, scale_25, scale_26, scale_27, scale_28, scale_29, scale_30, scale_31, scale_32)"
+//            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+//
+//        stmt.addUInt32(cacheInfo->itemId);
+//        stmt.addUInt32(cacheInfo->quality);
+//        stmt.addUInt32(cacheInfo->slot);
+//        stmt.addUInt32(cacheInfo->source);
+//        stmt.addUInt32(cacheInfo->sourceId);
+//        stmt.addUInt32(cacheInfo->team);
+//        stmt.addUInt32(cacheInfo->repFaction);
+//        stmt.addUInt32(cacheInfo->repRank);
+//        stmt.addUInt32(cacheInfo->minLevel);
+//
+//        for (int i = 1; i <= MAX_STAT_SCALES; ++i)
+//        {
+//            if (cacheInfo->weights[i])
+//                stmt.addUInt32(cacheInfo->weights[i]);
+//            else
+//                stmt.addUInt32(0);
+//        }
+//
+//        stmt.Execute();
 
         itemInfoCache[cacheInfo->itemId] = cacheInfo;
     }
