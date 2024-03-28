@@ -131,6 +131,10 @@ endif()
   endif()
 endif()
 
+if(BUILD_SOLOCRAFT)
+add_definitions(-DBUILD_SOLOCRAFT)
+endif()
+
 # Define Core
 if ( ${CMAKE_PROJECT_NAME} MATCHES "CMaNGOS")
   add_definitions(-DCMANGOS)
