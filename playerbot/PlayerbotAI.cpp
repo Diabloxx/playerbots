@@ -172,7 +172,6 @@ PlayerbotAI::PlayerbotAI(Player* bot) :
     masterIncomingPacketHandlers.AddHandler(CMSG_REPOP_REQUEST, "release spirit");
     masterIncomingPacketHandlers.AddHandler(CMSG_RECLAIM_CORPSE, "revive from corpse");
     
-
 #ifdef MANGOSBOT_TWO
     masterIncomingPacketHandlers.AddHandler(CMSG_LFG_TELEPORT, "lfg teleport");
 #endif
@@ -201,7 +200,6 @@ PlayerbotAI::PlayerbotAI(Player* bot) :
     botOutgoingPacketHandlers.AddHandler(MSG_RAID_READY_CHECK, "ready check");
     botOutgoingPacketHandlers.AddHandler(SMSG_QUEST_CONFIRM_ACCEPT, "confirm quest");
 
-    
 #ifndef MANGOSBOT_ZERO
     botOutgoingPacketHandlers.AddHandler(SMSG_ARENA_TEAM_INVITE, "arena team invite");
 #endif
@@ -210,18 +208,14 @@ PlayerbotAI::PlayerbotAI(Player* bot) :
     botOutgoingPacketHandlers.AddHandler(SMSG_LFG_PROPOSAL_UPDATE, "lfg proposal");
 #endif
     
-    
-#ifdef MANGOS
-    botOutgoingPacketHandlers.AddHandler(SMSG_CAST_FAILED, "cast failed");
-#endif
-#ifdef CMANGOS
     botOutgoingPacketHandlers.AddHandler(SMSG_CAST_RESULT, "cast failed");
-#endif
     botOutgoingPacketHandlers.AddHandler(SMSG_DUEL_REQUESTED, "duel requested");
     botOutgoingPacketHandlers.AddHandler(SMSG_INVENTORY_CHANGE_FAILURE, "inventory change failure");
 
     masterOutgoingPacketHandlers.AddHandler(SMSG_PARTY_COMMAND_RESULT, "party command");
+#ifndef MANGOSBOT_ZERO
     masterOutgoingPacketHandlers.AddHandler(MSG_RAID_READY_CHECK_FINISHED, "ready check finished");
+#endif
 }
 
 PlayerbotAI::~PlayerbotAI()
@@ -819,6 +813,23 @@ bool PlayerbotAI::CanEnterArea(const AreaTrigger* area)
     }
 
     return false;
+}
+
+void PlayerbotAI::Unmount()
+{
+    if (bot->IsMounted() && !bot->IsTaxiFlying())
+    {
+        bot->RemoveSpellsCausingAura(SPELL_AURA_MOUNTED);
+        bot->Unmount();
+
+        bot->UpdateSpeed(MOVE_RUN, true);
+        bot->UpdateSpeed(MOVE_RUN, false);
+
+        if (bot->IsFlying())
+        {
+            bot->GetMotionMaster()->MoveFall();
+        }
+    }
 }
 
 bool PlayerbotAI::IsStateActive(BotState state) const
@@ -2732,7 +2743,7 @@ Aura* PlayerbotAI::GetAura(std::string name, Unit* unit, bool checkIsOwner)
     return nullptr;
 }
 
-std::vector<Aura*> PlayerbotAI::GetAuras(Unit* unit)
+std::vector<Aura*> PlayerbotAI::GetAuras(Unit* unit, bool allAuras, bool positive)
 {
     std::vector<Aura*> outAuras;
     for (uint32 auraType = SPELL_AURA_BIND_SIGHT; auraType < TOTAL_AURAS; auraType++)
@@ -2747,7 +2758,10 @@ std::vector<Aura*> PlayerbotAI::GetAuras(Unit* unit)
             Aura* aura = *i;
             if (aura)
             {
-                outAuras.push_back(aura);
+                if (allAuras || (positive && aura->IsPositive()) || (!positive && !aura->IsPositive()))
+                {
+                    outAuras.push_back(aura);
+                }
             }
         }
     }
@@ -3008,8 +3022,6 @@ bool PlayerbotAI::CanCastSpell(uint32 spellid, Unit* target, uint8 effectMask, b
 	//if (oldSel)
 	//	bot->SetSelectionGuid(oldSel);
 
-    const bool ignoreReagents = HasCheat(BotCheatMask::item);
-
     switch (result)
     {
         case SPELL_FAILED_NOT_INFRONT:
@@ -3022,9 +3034,6 @@ bool PlayerbotAI::CanCastSpell(uint32 spellid, Unit* target, uint8 effectMask, b
         case SPELL_FAILED_OUT_OF_RANGE:
         case SPELL_FAILED_LINE_OF_SIGHT:
             return ignoreRange;
-        case SPELL_FAILED_REAGENTS:
-        case SPELL_FAILED_TOTEMS:
-            return ignoreReagents;
         case SPELL_FAILED_AFFECTING_COMBAT:
             return ignoreInCombat;
         case SPELL_FAILED_NOT_MOUNTED:
@@ -3088,8 +3097,6 @@ bool PlayerbotAI::CanCastSpell(uint32 spellid, GameObject* goTarget, uint8 effec
     //if (oldSel)
     //    bot->SetSelectionGuid(oldSel);
 
-    const bool ignoreReagents = HasCheat(BotCheatMask::item);
-
     switch (result)
     {
     case SPELL_FAILED_NOT_INFRONT:
@@ -3101,8 +3108,6 @@ bool PlayerbotAI::CanCastSpell(uint32 spellid, GameObject* goTarget, uint8 effec
         return true;
     case SPELL_FAILED_OUT_OF_RANGE:
         return ignoreRange;
-    case SPELL_FAILED_REAGENTS:
-        return ignoreReagents;
     case SPELL_FAILED_AFFECTING_COMBAT:
         return ignoreInCombat;
     case SPELL_FAILED_NOT_MOUNTED:
@@ -3153,8 +3158,6 @@ bool PlayerbotAI::CanCastSpell(uint32 spellid, float x, float y, float z, uint8 
     SpellCastResult result = spell->CheckCast(true);
     delete spell;
 
-    const bool ignoreReagents = HasCheat(BotCheatMask::item);
-
     switch (result)
     {
     case SPELL_FAILED_NOT_INFRONT:
@@ -3166,8 +3169,6 @@ bool PlayerbotAI::CanCastSpell(uint32 spellid, float x, float y, float z, uint8 
         return true;
     case SPELL_FAILED_OUT_OF_RANGE:
         return ignoreRange;
-    case SPELL_FAILED_REAGENTS:
-        return ignoreReagents;
     case SPELL_FAILED_AFFECTING_COMBAT:
         return ignoreInCombat;
     case SPELL_FAILED_NOT_MOUNTED:
@@ -3197,9 +3198,9 @@ uint8 PlayerbotAI::GetManaPercent() const
    return GetManaPercent(*bot);
 }
 
-bool PlayerbotAI::CastSpell(std::string name, Unit* target, Item* itemTarget, bool waitForSpell, uint32* outSpellDuration, bool canUseReagentCheat)
+bool PlayerbotAI::CastSpell(std::string name, Unit* target, Item* itemTarget, bool waitForSpell, uint32* outSpellDuration)
 {
-    bool result = CastSpell(aiObjectContext->GetValue<uint32>("spell id", name)->Get(), target, itemTarget, waitForSpell, outSpellDuration, canUseReagentCheat);
+    bool result = CastSpell(aiObjectContext->GetValue<uint32>("spell id", name)->Get(), target, itemTarget, waitForSpell, outSpellDuration);
     if (result)
     {
         aiObjectContext->GetValue<time_t>("last spell cast time", name)->Set(time(0));
@@ -3208,7 +3209,7 @@ bool PlayerbotAI::CastSpell(std::string name, Unit* target, Item* itemTarget, bo
     return result;
 }
 
-bool PlayerbotAI::CastSpell(uint32 spellId, Unit* target, Item* itemTarget, bool waitForSpell, uint32* outSpellDuration, bool canUseReagentCheat)
+bool PlayerbotAI::CastSpell(uint32 spellId, Unit* target, Item* itemTarget, bool waitForSpell, uint32* outSpellDuration)
 {
     if (!spellId)
         return false;
@@ -3269,7 +3270,7 @@ bool PlayerbotAI::CastSpell(uint32 spellId, Unit* target, Item* itemTarget, bool
     Spell *spell = new Spell(bot, pSpellInfo, false);
 
     SpellCastTargets targets;
-    if (pSpellInfo->Targets & TARGET_FLAG_ITEM)
+    if ((pSpellInfo->Targets & TARGET_FLAG_ITEM) || spellId == 1804)
     {
         spell->SetCastItem(itemTarget ? itemTarget : aiObjectContext->GetValue<Item*>("item for spell", spellId)->Get());
         targets.setItemTarget(spell->GetCastItem());
@@ -3350,31 +3351,20 @@ bool PlayerbotAI::CastSpell(uint32 spellId, Unit* target, Item* itemTarget, bool
         StopMoving();
     }
 
-    if (HasCheat(BotCheatMask::item) && canUseReagentCheat)
-    {
-        for (uint8 i = 0; i < MAX_SPELL_REAGENTS; i++)
-        {
-            const int32 itemId = pSpellInfo->Reagent[i];
-            if (itemId)
-            {
-                spell->m_ignoreCosts = true;
-                spell->SetPowerCost(spell->CalculatePowerCost(spell->m_spellInfo, bot, spell, spell->GetCastItem(), false));
-                break;              
-            }
-        }       
-    }   
-
     SpellCastResult spellSuccess = spell->SpellStart(&targets);
 
     if (pSpellInfo->Effect[0] == SPELL_EFFECT_OPEN_LOCK ||
         pSpellInfo->Effect[0] == SPELL_EFFECT_SKINNING)
     {
-        LootObject loot = *aiObjectContext->GetValue<LootObject>("loot target");
-        if (!loot.IsLootPossible(bot))
+        if (!spell->m_targets.getItemTarget())
         {
-            spell->cancel();
-            //delete spell;
-            return false;
+            LootObject loot = *aiObjectContext->GetValue<LootObject>("loot target");
+            if (!loot.IsLootPossible(bot))
+            {
+                spell->cancel();
+                //delete spell;
+                return false;
+            }
         }
     }
 
@@ -3411,7 +3401,141 @@ bool PlayerbotAI::CastSpell(uint32 spellId, Unit* target, Item* itemTarget, bool
     return true;
 }
 
-bool PlayerbotAI::CastSpell(uint32 spellId, float x, float y, float z, Item* itemTarget, bool waitForSpell, uint32* outSpellDuration, bool canUseReagentCheat)
+bool PlayerbotAI::CastSpell(uint32 spellId, GameObject* goTarget, Item* itemTarget, bool waitForSpell, uint32* outSpellDuration)
+{
+    if (!spellId)
+        return false;
+
+    aiObjectContext->GetValue<LastMovement&>("last movement")->Get().Set(NULL);
+    aiObjectContext->GetValue<time_t>("stay time")->Set(0);
+
+    MotionMaster& mm = *bot->GetMotionMaster();
+
+    if (bot->IsFlying() || bot->IsTaxiFlying())
+        return false;
+
+    //bot->clearUnitState(UNIT_STAT_CHASE);
+    //bot->clearUnitState(UNIT_STAT_FOLLOW);
+
+    bool failWithDelay = false;
+    if (!bot->IsStandState())
+    {
+        bot->SetStandState(UNIT_STAND_STATE_STAND);
+        failWithDelay = true;
+    }
+
+    WorldObject* faceTo = goTarget;
+    if (!sServerFacade.IsInFront(bot, faceTo, sPlayerbotAIConfig.sightDistance, CAST_ANGLE_IN_FRONT))
+    {
+        sServerFacade.SetFacingTo(bot, faceTo);
+        //failWithDelay = true;
+    }
+
+    if (failWithDelay)
+    {
+        if (waitForSpell)
+        {
+            SetAIInternalUpdateDelay(sPlayerbotAIConfig.globalCoolDown);
+        }
+
+        if (outSpellDuration)
+        {
+            *outSpellDuration = sPlayerbotAIConfig.globalCoolDown;
+        }
+
+        return false;
+    }
+
+    const SpellEntry* pSpellInfo = sServerFacade.LookupSpellInfo(spellId);
+    Spell* spell = new Spell(bot, pSpellInfo, false);
+
+    SpellCastTargets targets;
+    if (pSpellInfo->Targets & TARGET_FLAG_DEST_LOCATION)
+    {
+        WorldLocation aoe = aiObjectContext->GetValue<WorldLocation>("aoe position")->Get();
+        if (aoe.coord_x != 0)
+            targets.setDestination(aoe.coord_x, aoe.coord_y, aoe.coord_z);
+        else if (goTarget && goTarget->GetObjectGuid() != bot->GetObjectGuid())
+            targets.setDestination(goTarget->GetPositionX(), goTarget->GetPositionY(), goTarget->GetPositionZ());
+    }
+    else if (pSpellInfo->Targets & TARGET_FLAG_SOURCE_LOCATION)
+    {
+        targets.setDestination(bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ());
+    }
+
+    targets.setGOTarget(goTarget);
+    spell->SetCastItem(itemTarget ? itemTarget : aiObjectContext->GetValue<Item*>("item for spell", spellId)->Get());
+    targets.setItemTarget(spell->GetCastItem());
+
+    if (goTarget->GetGoType() == GAMEOBJECT_TYPE_CHEST)
+    {
+        auto context = GetAiObjectContext();
+        AI_VALUE(LootObjectStack*, "available loot")->Add(goTarget->GetObjectGuid());
+    }
+
+    if (spellId == 1953) // simulate blink coordinates
+    {
+        float angle = bot->GetOrientation();
+        float distance = 20.0f;
+        float fx = bot->GetPositionX() + cos(angle) * distance;
+        float fy = bot->GetPositionY() + sin(angle) * distance;
+        float fz = bot->GetPositionZ();
+
+        float ox, oy, oz;
+        bot->GetPosition(ox, oy, oz);
+        //#ifdef MANGOSBOT_TWO
+        //        bot->GetMap()->GetHitPosition(ox, oy, oz + max_height, fx, fy, fz, bot->GetPhaseMask(), -0.5f);
+        //#else
+        //        bot->GetMap()->GetHitPosition(ox, oy, oz + 2.0f, fx, fy, fz, -0.5f);
+        //#endif
+        bot->UpdateAllowedPositionZ(fx, fy, fz);
+        targets.setDestination(fx, fy, fz);
+    }
+
+    // Fail the cast if the bot is moving and the spell is a casting/channeled spell
+    const bool isMoving = !bot->IsStopped() || bot->IsFalling();
+    if (isMoving && ((GetSpellCastTime(pSpellInfo, bot, spell) > 0) || (IsChanneledSpell(pSpellInfo) && (GetSpellDuration(pSpellInfo) > 0))))
+    {
+        if (IsJumping() || bot->IsFalling())
+        {
+            spell->cancel();
+            return false;
+        }
+        StopMoving();
+    }
+
+    SpellCastResult spellSuccess = spell->SpellStart(&targets);
+    if (spellSuccess != SPELL_CAST_OK)
+        return false;
+
+    PlayAttackEmote(6);
+
+    if (waitForSpell)
+    {
+        WaitForSpellCast(spell);
+    }
+
+    if (outSpellDuration)
+    {
+        *outSpellDuration = GetSpellCastDuration(spell);
+    }
+
+    if (spell->GetCastTime() || (IsChanneledSpell(pSpellInfo) && GetSpellDuration(pSpellInfo) > 0))
+        aiObjectContext->GetValue<LastSpellCast&>("last spell cast")->Get().Set(spellId, goTarget->GetObjectGuid(), time(0));
+
+    aiObjectContext->GetValue<ai::PositionMap&>("position")->Get()["random"].Reset();
+
+    if (HasStrategy("debug spell", BotState::BOT_STATE_NON_COMBAT))
+    {
+        std::ostringstream out;
+        out << "Casting " << ChatHelper::formatSpell(pSpellInfo);
+        TellPlayerNoFacing(GetMaster(), out);
+    }
+
+    return true;
+}
+
+bool PlayerbotAI::CastSpell(uint32 spellId, float x, float y, float z, Item* itemTarget, bool waitForSpell, uint32* outSpellDuration)
 {
     if (!spellId)
         return false;
@@ -3471,7 +3595,7 @@ bool PlayerbotAI::CastSpell(uint32 spellId, float x, float y, float z, Item* ite
     Spell* spell = new Spell(bot, pSpellInfo, false);
 
     SpellCastTargets targets;
-    if (pSpellInfo->Targets & TARGET_FLAG_ITEM)
+    if ((pSpellInfo->Targets & TARGET_FLAG_ITEM) || spellId == 1804)
     {
         spell->SetCastItem(itemTarget ? itemTarget : aiObjectContext->GetValue<Item*>("item for spell", spellId)->Get());
         targets.setItemTarget(spell->GetCastItem());
@@ -3503,51 +3627,7 @@ bool PlayerbotAI::CastSpell(uint32 spellId, float x, float y, float z, Item* ite
         return false;
     }
 
-    // Prepare the reagents if cheats enabled
-    if (HasCheat(BotCheatMask::item) && canUseReagentCheat)
-    {
-        std::vector<std::pair<int32, uint32>> spellReagents;
-        for (uint8 i = 0; i < MAX_SPELL_REAGENTS; i++)
-        {
-            const int32 itemId = pSpellInfo->Reagent[i];
-            if (itemId)
-            {
-                const uint32 itemAmount = pSpellInfo->ReagentCount[i];
-                if (itemAmount > 0)
-                {
-                    const uint32 currentItemAmount = bot->GetItemCount(itemId);
-                    if (currentItemAmount < itemAmount)
-                    {
-                        spellReagents.emplace_back((uint32)itemId, itemAmount - currentItemAmount);
-                    }
-                }
-            }
-        }
-
-        if (!spellReagents.empty())
-        {
-            for (auto& pair : spellReagents)
-            {
-                // Check bag space and find places
-                const uint32 itemId = pair.first;
-                const uint32 amount = pair.second;
-                ItemPosCountVec dest;
-                uint8 msg = bot->CanStoreNewItem(NULL_BAG, NULL_SLOT, dest, itemId, amount);
-                if (msg == EQUIP_ERR_OK)
-                {
-                    Item* item = bot->StoreNewItem(dest, itemId, true, Item::GenerateItemRandomPropertyId(itemId));
-                    bot->SendNewItem(item, amount, false, true, false);
-                }
-            }
-        }
-    }
-
-#ifdef MANGOS
-    spell->prepare(&targets);
-#endif
-#ifdef CMANGOS
     spell->SpellStart(&targets);
-#endif
 
     if (sServerFacade.isMoving(bot) && spell->GetCastTime())
     {
@@ -3562,12 +3642,15 @@ bool PlayerbotAI::CastSpell(uint32 spellId, float x, float y, float z, Item* ite
     if (pSpellInfo->Effect[0] == SPELL_EFFECT_OPEN_LOCK ||
         pSpellInfo->Effect[0] == SPELL_EFFECT_SKINNING)
     {
-        LootObject loot = *aiObjectContext->GetValue<LootObject>("loot target");
-        if (!loot.IsLootPossible(bot))
+        if (!spell->m_targets.getItemTarget())
         {
-            spell->cancel();
-            //delete spell;
-            return false;
+            LootObject loot = *aiObjectContext->GetValue<LootObject>("loot target");
+            if (!loot.IsLootPossible(bot))
+            {
+                spell->cancel();
+                //delete spell;
+                return false;
+            }
         }
     }
 
@@ -4138,13 +4221,91 @@ bool PlayerbotAI::IsHerb(const GameObject* go)
     return false;
 }
 
+bool PlayerbotAI::HasSpellItems(uint32 spellId, const Item* castItem) const
+{
+    const SpellEntry* spellEntry = sSpellTemplate.LookupEntry<SpellEntry>(spellId);
+    if (spellEntry)
+    {
+        if (HasCheat(BotCheatMask::item))
+        {
+            return true;
+        }
+        else
+        {
+            if (!bot->CanNoReagentCast(spellEntry))
+            {
+                for (uint32 i = 0; i < MAX_SPELL_REAGENTS; ++i)
+                {
+                    if (spellEntry->Reagent[i] <= 0)
+                    {
+                        continue;
+                    }
+
+                    uint32 itemid = spellEntry->Reagent[i];
+                    uint32 itemcount = spellEntry->ReagentCount[i];
+
+                    // if CastItem is also spell reagent
+                    if (castItem && castItem->GetEntry() == itemid)
+                    {
+                        const ItemPrototype* proto = castItem->GetProto();
+                        if (!proto)
+                        {
+                            return false;
+                        }
+
+                        for (uint8 s = 0; s < MAX_ITEM_PROTO_SPELLS; ++s)
+                        {
+                            // CastItem will be used up and does not count as reagent
+                            int32 charges = castItem->GetSpellCharges(s);
+                            if (proto->Spells[s].SpellCharges < 0 && abs(charges) < 2)
+                            {
+                                ++itemcount;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (!bot->HasItemCount(itemid, itemcount))
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            // check totem-item requirements (items presence in inventory)
+            uint32 totems = MAX_SPELL_TOTEMS;
+            for (auto i : spellEntry->Totem)
+            {
+                if (i != 0)
+                {
+                    if (bot->HasItemCount(i, 1))
+                    {
+                        totems -= 1;
+                    }
+                }
+                else
+                {
+                    totems -= 1;
+                }
+            }
+
+            if (totems != 0)
+            {
+                return false;
+            }
+        }
+    }
+
+    return false;
+}
+
 bool IsAlliance(uint8 race)
 {
     return race == RACE_HUMAN || race == RACE_DWARF || race == RACE_NIGHTELF ||
 #ifndef MANGOSBOT_ZERO
-        race == RACE_DRAENEI ||
+           race == RACE_DRAENEI ||
 #endif
-            race == RACE_GNOME;
+           race == RACE_GNOME;
 }
 
 /*
@@ -5254,6 +5415,12 @@ void PlayerbotAI::InventoryTellItem(Player* player, ItemPrototype const* proto, 
 
 std::list<Item*> PlayerbotAI::InventoryParseItems(std::string text, IterateItemsMask mask)
 {
+    if(text.empty())
+    {
+        std::list<Item*> result;
+        return result;
+    }
+
     AiObjectContext* context = aiObjectContext;
 
     std::set<Item*> found;
