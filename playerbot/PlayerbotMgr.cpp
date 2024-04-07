@@ -8,6 +8,7 @@
 #include "playerbot/TravelMgr.h"
 #include "Chat/ChannelMgr.h"
 #include "Social/SocialMgr.h"
+#include <iostream>
 
 
 class LoginQueryHolder;
@@ -244,6 +245,10 @@ void PlayerbotHolder::OnBotLogin(Player * const bot)
     {
         bot->CreatePlayerbotAI();
         ai = bot->GetPlayerbotAI();
+    }
+    else
+    {
+        std::cerr << "Error: Bot is null." << std::endl;
     }
 
 	OnBotLoginInternal(bot);
@@ -1180,6 +1185,10 @@ void PlayerbotMgr::HandleMasterOutgoingPacket(const WorldPacket& packet)
             continue;
 
         bot->GetPlayerbotAI()->HandleMasterOutgoingPacket(packet);
+    }
+    else
+    {
+        sLog.outError("ERROR: Unknown Cause")
     }
 
     for (PlayerBotMap::const_iterator it = sRandomPlayerbotMgr.GetPlayerBotsBegin(); it != sRandomPlayerbotMgr.GetPlayerBotsEnd(); ++it)
