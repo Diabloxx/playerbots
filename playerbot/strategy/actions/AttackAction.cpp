@@ -73,7 +73,7 @@ bool AttackRTITargetAction::Execute(Event& event)
 
 bool AttackMyTargetAction::isUseful()
 {
-    if (ai->ContainsStrategy(STRATEGY_TYPE_HEAL))
+    if (ai->ContainsStrategy(STRATEGY_TYPE_HEAL) && !ai->HasStrategy("offdps", BotState::BOT_STATE_COMBAT))
         return false;
 
     return true;
@@ -81,7 +81,7 @@ bool AttackMyTargetAction::isUseful()
 
 bool AttackRTITargetAction::isUseful()
 {
-    if (ai->ContainsStrategy(STRATEGY_TYPE_HEAL))
+    if (ai->ContainsStrategy(STRATEGY_TYPE_HEAL) && !ai->HasStrategy("offdps", BotState::BOT_STATE_COMBAT))
         return false;
 
     return true;
@@ -100,14 +100,10 @@ bool AttackAction::Attack(Player* requester, Unit* target)
     {
         if (bot->IsMounted() && (sServerFacade.GetDistance2d(bot, target) < 40.0f || bot->IsFlying()))
         {
-            WorldPacket emptyPacket;
-            bot->GetSession()->HandleCancelMountAuraOpcode(emptyPacket);
-            bot->UpdateSpeed(MOVE_RUN, true);
-            bot->UpdateSpeed(MOVE_RUN, false);
+            ai->Unmount();
             
             if (bot->IsFlying())
             {
-                bot->GetMotionMaster()->MoveFall();
                 return true;
             }
         }
