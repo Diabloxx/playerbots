@@ -513,18 +513,19 @@ bool MovementAction::MoveTo(uint32 mapId, float x, float y, float z, bool idle, 
                     bot->GetMotionMaster()->MoveFall();
             }
 
-            Spell* spell = new Spell(bot, pSpellInfo, false);
-            SpellCastTargets targets;
-            targets.setUnitTarget(bot);
-#ifdef MANGOS
-            spell->prepare(&targets, NULL);
-#endif
-#ifdef CMANGOS
-            spell->SpellStart(&targets, NULL);
-#endif
-            SpellCastResult castResult = spell->cast(true);
-
-            return castResult == SPELL_CAST_OK;
+            std::list<ObjectGuid> gos = *ai->GetAiObjectContext()->GetValue<std::list<ObjectGuid> >("nearest game objects no los");
+            for (std::list<ObjectGuid>::iterator i = gos.begin(); i != gos.end(); ++i)
+            {
+                GameObject* go = ai->GetGameObject(*i);
+                if (go && go->GetGOInfo()->id == entry)
+                {
+                    std::unique_ptr<WorldPacket> packet(new WorldPacket(CMSG_GAMEOBJ_USE));
+                    *packet << go->GetObjectGuid();
+                    bot->GetSession()->QueuePacket(std::move(packet));
+                    return true;
+                }
+            }
+            return false;
         }
 
         if (pathType == TravelNodePathType::areaTrigger)
