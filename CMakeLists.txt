@@ -120,6 +120,9 @@ endif()
 
 # Define BUILD_ELUNA if need
 if (BUILD_ELUNA)
+  include_directories(
+  ${CMAKE_SOURCE_DIR}/src/game/LuaEngine/hooks
+  )
   if (${CMAKE_PROJECT_NAME} MATCHES "Classic")
     add_definitions(-DBUILD_ELUNA -DCLASSIC)
 endif()
