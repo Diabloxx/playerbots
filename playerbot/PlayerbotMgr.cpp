@@ -9,6 +9,7 @@
 #include "playerbot/TravelMgr.h"
 #include "Chat/ChannelMgr.h"
 #include "Social/SocialMgr.h"
+#include <iostream>
 
 
 class LoginQueryHolder;
@@ -245,6 +246,10 @@ void PlayerbotHolder::OnBotLogin(Player* const bot)
     {
         bot->CreatePlayerbotAI();
         ai = bot->GetPlayerbotAI();
+    }
+    else
+    {
+        std::cerr << "Error: Bot is null." << std::endl;
     }
 
     OnBotLoginInternal(bot);
@@ -1182,6 +1187,10 @@ void PlayerbotMgr::HandleMasterOutgoingPacket(const WorldPacket& packet)
 
         bot->GetPlayerbotAI()->HandleMasterOutgoingPacket(packet);
     }
+    else
+    {
+        sLog.outError("ERROR: Unknown Cause")
+    }
 
     for (PlayerBotMap::const_iterator it = sRandomPlayerbotMgr.GetPlayerBotsBegin(); it != sRandomPlayerbotMgr.GetPlayerBotsEnd(); ++it)
     {
@@ -1219,7 +1228,7 @@ void PlayerbotMgr::OnBotLoginInternal(Player* const bot)
 void PlayerbotMgr::OnPlayerLogin(Player* player)
 {
     // set locale priority for bot texts
-    //sPlayerbotTextMgr.AddLocalePriority(player->GetSession()->GetSessionDbLocaleIndex());
+    // sPlayerbotTextMgr.AddLocalePriority(player->GetSession()->GetSessionDbLocaleIndex());
     sLog.outBasic("Player %s logged in, localeDbc %i, localeDb %i", player->GetName(), (uint32)(player->GetSession()->GetSessionDbcLocale()), player->GetSession()->GetSessionDbLocaleIndex());
 
     if (sPlayerbotAIConfig.selfBotLevel > 2 || sPlayerbotAIConfig.IsFreeAltBot(player) || sRandomPlayerbotMgr.GetValue(master->GetObjectGuid().GetCounter(), "selfbot"))
