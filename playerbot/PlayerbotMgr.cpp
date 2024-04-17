@@ -1187,10 +1187,6 @@ void PlayerbotMgr::HandleMasterOutgoingPacket(const WorldPacket& packet)
 
         bot->GetPlayerbotAI()->HandleMasterOutgoingPacket(packet);
     }
-    else
-    {
-        sLog.outError("ERROR: Unknown Cause")
-    }
 
     for (PlayerBotMap::const_iterator it = sRandomPlayerbotMgr.GetPlayerBotsBegin(); it != sRandomPlayerbotMgr.GetPlayerBotsEnd(); ++it)
     {
