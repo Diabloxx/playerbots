@@ -192,7 +192,7 @@ bool SummonAction::Teleport(Player* requester, Player *summoner, Player *player)
             {
                 if (sServerFacade.UnitIsDead(player) && sServerFacade.IsAlive(summoner))
                 {
-                    if (!ai->IsSafe(player) || !ai->IsSafe(summoner))
+                    if (!ai->IsSafe(player) || !ai->IsSafe(summoner) && !summoner->IsInCombat())
                         return false;
 
                     player->ResurrectPlayer(1.0f, false);
