@@ -1472,6 +1472,7 @@ void PlayerbotAI::HandleBotOutgoingPacket(const WorldPacket& packet)
             p >> textLen >> message >> chatTag;
 #endif
 #ifdef MANGOSBOT_ONE
+            return;
             p >> guid1 >> unused;
             if (guid1.IsEmpty() || p.size() > 0x1000)
                 return;
