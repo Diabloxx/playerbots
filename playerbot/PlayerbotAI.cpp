@@ -948,7 +948,6 @@ void PlayerbotAI::OnResurrected()
 
 void PlayerbotAI::HandleCommands()
 {
-
     ExternalEventHelper helper(aiObjectContext);
     std::list<ChatCommandHolder> delayed;
     while (!chatCommands.empty())

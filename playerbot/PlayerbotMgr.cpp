@@ -1093,7 +1093,21 @@ std::string PlayerbotHolder::ListBots(Player* master)
 }
 
 
-PlayerbotMgr::PlayerbotMgr(Player* const master) : PlayerbotHolder(), master(master), lastErrorTell(0)
+uint32 PlayerbotHolder::GetPlayerbotsAmount() const
+{
+    uint32 amount = 0;
+    for (const auto& pair : playerBots)
+    {
+        if (pair.second)
+        {
+            amount++;
+        }
+    }
+
+    return amount;
+}
+
+PlayerbotMgr::PlayerbotMgr(Player* const master) : PlayerbotHolder(),  master(master), lastErrorTell(0)
 {
 }
 
