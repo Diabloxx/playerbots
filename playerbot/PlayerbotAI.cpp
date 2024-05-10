@@ -1318,16 +1318,14 @@ void PlayerbotAI::HandleCommand(uint32 type, const std::string& text, Player& fr
 
     if ((filtered.size() > 2 && filtered.substr(0, 2) == "d ") || (filtered.size() > 3 && filtered.substr(0, 3) == "do "))
     {
-        Event event("do", "", &fromPlayer);
         std::string action = filtered.substr(filtered.find(" ") + 1);
-        DoSpecificAction(action, event);
+        DoSpecificAction(action);
     }
     if (ChatHelper::parseValue("command", filtered).substr(0, 3) == "do ")
     {
-        Event event("do", "", &fromPlayer);
         std::string action = ChatHelper::parseValue("command", filtered);
         action = action.substr(3);
-        DoSpecificAction(action, event);
+        DoSpecificAction(action);
     }
     else if (type != CHAT_MSG_WHISPER && filtered.size() > 6 && filtered.substr(0, 6) == "queue ")
     {
@@ -2092,7 +2090,7 @@ bool PlayerbotAI::CanDoSpecificAction(const std::string& name, bool isUseful, bo
 
 bool PlayerbotAI::DoSpecificAction(const std::string& name, Event event, bool silent)
 {
-    Player* requester = event.getOwner();
+    Player* requester = event.getOwner() ? event.getOwner() : GetMaster();
     for (uint8 i = 0 ; i < (uint8)BotState::BOT_STATE_ALL; i++)
     {
         Engine* engine = engines[i];

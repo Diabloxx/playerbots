@@ -10,9 +10,15 @@ using namespace ai;
 static std::list<Item*> Find(PlayerbotAI* ai, std::string qualifier)
 {
     std::list<Item*> result;
+
     Player* bot = ai->GetBot();
+
 	IterateItemsMask mask = IterateItemsMask((uint8)IterateItemsMask::ITERATE_ITEMS_IN_EQUIP | (uint8)IterateItemsMask::ITERATE_ITEMS_IN_BAGS);
-    result = ai->InventoryParseItems(qualifier, mask);
+
+    std::list<Item*> items = ai->InventoryParseItems(qualifier, mask);
+    for (std::list<Item*>::iterator i = items.begin(); i != items.end(); i++)
+        result.push_back(*i);
+
     return result;
 }
 

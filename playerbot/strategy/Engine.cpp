@@ -418,7 +418,7 @@ ActionResult Engine::ExecuteAction(const std::string& name, Event& event)
             {
                 if (action->isPossible())
                 {
-                    action->MakeVerbose(true);
+                    action->MakeVerbose();
                     bool executionResult = ListenAndExecute(action, event);
                     MultiplyAndPush(action->getContinuers(), 0.0f, false, event, "default");
                     actionResult = executionResult ? ACTION_RESULT_OK : ACTION_RESULT_FAILED;

@@ -3,13 +3,12 @@
 
 namespace ai
 {
-    class UseTrinketAction : public UseAction 
+    class UseTrinketAction : public UseItemAction 
     {
     public:
-
-        UseTrinketAction(PlayerbotAI* ai) : UseAction(ai, "use trinket") {}
+        UseTrinketAction(PlayerbotAI* ai) : UseItemAction(ai, "use trinket", true) {}
         virtual bool Execute(Event& event) override;
         virtual bool isPossible();
-        virtual bool isUseful() { return UseAction::isUseful() && !bot->HasStealthAura(); }
+        virtual bool isUseful() { return UseItemAction::isUseful() && !bot->HasStealthAura(); }
     };
 }

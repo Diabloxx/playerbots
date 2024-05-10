@@ -30,8 +30,7 @@ namespace ai
         static std::string formatItem(ItemPrototype const * proto, int count = 0, int total = 0);
         static std::string formatItem(Item* item, int count = 0, int total = 0);
         static std::string formatQItem(uint32 itemId);
-        static ItemIds parseItems(const std::string& text, bool validate = false, bool parseItemNames = false);
-        static std::vector<uint32> parseItemsUnordered(const std::string& text, bool validate = false, bool parseItemNames = false);
+        static ItemIds parseItems(std::string& text);
         static std::set<std::string> parseItemQualifiers(std::string& text);
         static uint32 parseItemQuality(std::string text);
         static bool parseItemClass(std::string text, uint32* itemClass, uint32* itemSubClass);
@@ -78,11 +77,6 @@ namespace ai
 
         static void PopulateSpellNameList();
         static std::vector<uint32> SpellIds(const std::string& name);
-
-        static std::vector<std::string> splitString(const std::string& text, const std::string& delimiter);
-        static std::vector<std::string> findSubstringsBetween(const std::string& input, const std::string& start, const std::string& end, bool includeDelimiters = false);
-        static void replaceSubstring(std::string& str, const std::string& oldStr, const std::string& newStr);
-
     private:
         static std::map<std::string, uint32> consumableSubClasses;
         static std::map<std::string, uint32> tradeSubClasses;
