@@ -46,7 +46,7 @@ protected:
     virtual void OnBotLoginInternal(Player * const bot) = 0;
     void Cleanup();
 
-private:
+public:
     PlayerBotMap playerBots;
 };
 
