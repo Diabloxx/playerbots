@@ -696,7 +696,7 @@ bool RandomItemMgr::ShouldEquipWeaponForSpec(uint8 playerclass, uint8 spec, Item
     {
         if (m_weightScales[spec].info.name == "resto")
         {
-            mh_weapons = { ITEM_SUBCLASS_WEAPON_DAGGER, ITEM_SUBCLASS_WEAPON_AXE, ITEM_SUBCLASS_WEAPON_MACE, ITEM_SUBCLASS_WEAPON_FIST };
+            mh_weapons = { ITEM_SUBCLASS_WEAPON_STAFF, ITEM_SUBCLASS_WEAPON_DAGGER, ITEM_SUBCLASS_WEAPON_AXE, ITEM_SUBCLASS_WEAPON_MACE, ITEM_SUBCLASS_WEAPON_FIST };
             oh_weapons = { ITEM_SUBCLASS_ARMOR_MISC, ITEM_SUBCLASS_ARMOR_SHIELD };
             r_weapons = { ITEM_SUBCLASS_ARMOR_TOTEM };
         }
@@ -711,7 +711,7 @@ bool RandomItemMgr::ShouldEquipWeaponForSpec(uint8 playerclass, uint8 spec, Item
         }
         else
         {
-            mh_weapons = { ITEM_SUBCLASS_WEAPON_STAFF, ITEM_SUBCLASS_WEAPON_DAGGER, ITEM_SUBCLASS_WEAPON_MACE };
+            mh_weapons = { ITEM_SUBCLASS_WEAPON_STAFF, ITEM_SUBCLASS_WEAPON_DAGGER, ITEM_SUBCLASS_WEAPON_AXE, ITEM_SUBCLASS_WEAPON_MACE, ITEM_SUBCLASS_WEAPON_FIST };
             oh_weapons = { ITEM_SUBCLASS_ARMOR_MISC, ITEM_SUBCLASS_ARMOR_SHIELD };
             r_weapons = { ITEM_SUBCLASS_ARMOR_TOTEM };
         }
@@ -729,7 +729,7 @@ bool RandomItemMgr::ShouldEquipWeaponForSpec(uint8 playerclass, uint8 spec, Item
     {
         if (m_weightScales[spec].info.name == "feraltank")
         {
-            mh_weapons = { ITEM_SUBCLASS_WEAPON_STAFF, ITEM_SUBCLASS_WEAPON_MACE2, ITEM_SUBCLASS_WEAPON_MACE };
+            mh_weapons = { ITEM_SUBCLASS_WEAPON_STAFF, ITEM_SUBCLASS_WEAPON_MACE2, ITEM_SUBCLASS_WEAPON_DAGGER, ITEM_SUBCLASS_WEAPON_MACE };
             oh_weapons = { ITEM_SUBCLASS_ARMOR_MISC };
             r_weapons = { ITEM_SUBCLASS_ARMOR_IDOL };
         }
@@ -1034,7 +1034,9 @@ void RandomItemMgr::BuildItemInfoCache()
             strstr(proto->Name1, "Unused ") ||
             strstr(proto->Name1, "Monster ") ||
             strstr(proto->Name1, "[PH]") ||
-            strstr(proto->Name1, "(OLD)")
+            strstr(proto->Name1, "(OLD)") ||
+            strstr(proto->Name1, "zzz") ||
+            strstr(proto->Name1, "ZZZ")
             )
             continue;
 
@@ -1162,7 +1164,7 @@ void RandomItemMgr::BuildItemInfoCache()
                     if (quest)
                     {
                         cacheInfo->source = ITEM_SOURCE_QUEST;
-                        cacheInfo->sourceId = *i;
+                        cacheInfo->sourceIds.push_back(*i);
                         if (!cacheInfo->minLevel)
                             cacheInfo->minLevel = quest->GetMinLevel();
 
@@ -1174,7 +1176,7 @@ void RandomItemMgr::BuildItemInfoCache()
                             {
                                 if ((reqRace & RACEMASK_ALLIANCE) != 0)
                                     isAlly = true;
-                                else if ((reqRace & RACEMASK_HORDE) != 0)
+                                if ((reqRace & RACEMASK_HORDE) != 0)
                                     isHorde = true;
                             }
                         }
@@ -1214,7 +1216,7 @@ void RandomItemMgr::BuildItemInfoCache()
                 }
 
                 sLog.outDetail("Item: %d, team (quest): %s", proto->ItemId, cacheInfo->team == ALLIANCE ? "Alliance" : cacheInfo->team == HORDE ? "Horde" : "Both");
-                sLog.outDetail("Item: %d, source: quest %d, minlevel: %d", proto->ItemId, cacheInfo->sourceId, cacheInfo->minLevel);
+                sLog.outDetail("Item: %d, source: quest %d, minlevel: %d", proto->ItemId, cacheInfo->sourceIds.front(), cacheInfo->minLevel);
             }
         }
 
@@ -1257,7 +1259,7 @@ void RandomItemMgr::BuildItemInfoCache()
                 if (creatures.size() == 1)
                 {
                     cacheInfo->source = ITEM_SOURCE_DROP;
-                    cacheInfo->sourceId = creatures.front();
+                    cacheInfo->sourceIds.push_back(creatures.front());
                     sLog.outDetail("Item: %d, source: creature drop, ID: %d", proto->ItemId, creatures.front());
                 }
                 else
@@ -1269,14 +1271,14 @@ void RandomItemMgr::BuildItemInfoCache()
         }
 
         // check gameobject drop
-        if (cacheInfo->source == ITEM_SOURCE_NONE || (cacheInfo->source == ITEM_SOURCE_DROP && !cacheInfo->sourceId))
+        if (cacheInfo->source == ITEM_SOURCE_NONE || (cacheInfo->source == ITEM_SOURCE_DROP && cacheInfo->sourceIds.empty()))
         {
             if (gameobjects.size())
             {
                 if (gameobjects.size() == 1)
                 {
                     cacheInfo->source = ITEM_SOURCE_DROP;
-                    cacheInfo->sourceId = gameobjects.front();
+                    cacheInfo->sourceIds.push_back(gameobjects.front());
                     sLog.outDetail("Item: %d, source: gameobject, ID: %d", proto->ItemId, gameobjects.front());
                 }
                 else
@@ -1381,6 +1383,10 @@ void RandomItemMgr::BuildItemInfoCache()
                         statW = (uint32)(proto->Quality + proto->ItemLevel);
                     }
                 }
+
+                // Make wand useful
+                if (!statW && cacheInfo->slot == EQUIPMENT_SLOT_RANGED && proto->SubClass == ITEM_SUBCLASS_WEAPON_WAND && (clazz == CLASS_PRIEST || clazz == CLASS_MAGE || clazz == CLASS_WARLOCK))
+                    statW = 1;
 
                 // set stat weight = 1 for items that can be equipped but have no proper stats
                 //statWeight.weight = statW;
@@ -1636,7 +1642,7 @@ uint32 RandomItemMgr::CalculateStatWeight(uint8 playerclass, uint8 spec, ItemPro
         uint32 effectAuraHealStatWeight = 0;
         uint32 effectAuraDamageStatWeight = 0;
 
-        for (uint32 j = 0; j < MAX_EFFECT_INDEX; j++)
+        for (uint8 j = 0; j < MAX_EFFECT_INDEX; ++j)
         {
             if ((spellproto->Effect[j] == SPELL_EFFECT_APPLY_AURA) &&
                 (spellproto->EffectBasePoints[j] >= 0))
@@ -2680,7 +2686,13 @@ uint32 RandomItemMgr::GetUpgrade(Player* player, std::string spec, uint8 slot, u
         // skip quest items
         if (info->source == ITEM_SOURCE_QUEST)
         {
-            if (player->GetQuestRewardStatus(info->sourceId) != QUEST_STATUS_COMPLETE)
+            bool hasQuestDone = false;
+            for (const auto& source : info->sourceIds)
+            {
+                if (player->GetQuestRewardStatus(source) == QUEST_STATUS_COMPLETE)
+                    hasQuestDone = true;
+            }
+            if (!hasQuestDone)
                 continue;
         }
 
@@ -2791,7 +2803,13 @@ std::vector<uint32> RandomItemMgr::GetUpgradeList(Player* player, uint32 specId,
         // skip quest items
         if (info->source == ITEM_SOURCE_QUEST)
         {
-            if (player->GetQuestRewardStatus(info->sourceId) != QUEST_STATUS_COMPLETE)
+            bool hasQuestDone = false;
+            for (const auto& source : info->sourceIds)
+            {
+                if (player->GetQuestRewardStatus(source) == QUEST_STATUS_COMPLETE)
+                    hasQuestDone = true;
+            }
+            if (!hasQuestDone)
                 continue;
         }
 
@@ -2953,17 +2971,29 @@ uint32 RandomItemMgr::GetLiveStatWeight(Player* player, uint32 itemId, uint32 sp
         return 0;
 
     // skip quest items
-    if (info->source == ITEM_SOURCE_QUEST && info->sourceId)
+    if (info->source == ITEM_SOURCE_QUEST && !info->sourceIds.empty())
     {
-        Quest const* quest = sObjectMgr.GetQuestTemplate(info->sourceId);
-        if (quest)
+        bool canDoQuest = false;
+        for (const auto& source : info->sourceIds)
         {
-            // only class quests player could do
-            if (!player->SatisfyQuestClass(quest, false) || !player->SatisfyQuestRace(quest, false) || !player->SatisfyQuestLevel(quest, false))
-                return 0;
+            Quest const* quest = sObjectMgr.GetQuestTemplate(source);
+            if (quest)
+            {
+                // only class quests player could do
+                if (player->SatisfyQuestClass(quest, false) && player->SatisfyQuestRace(quest, false) && player->SatisfyQuestLevel(quest, false))
+                    canDoQuest = true;
+
+                // check if quest is inactive (if linked to a not running game event)
+                if (!quest->IsActive())
+                    canDoQuest = false;
+
+                // can be rewarded
+                if (canDoQuest)
+                    break;
+            }
         }
-        /*if (!player->GetQuestRewardStatus(info->sourceId))
-            return 0;*/
+        if (!canDoQuest)
+            return 0;
     }
 
     // skip pvp items
@@ -3016,9 +3046,10 @@ uint32 RandomItemMgr::GetLiveStatWeight(Player* player, uint32 itemId, uint32 sp
 
     // skip missing skills
     if (info->reqSkill && player->GetSkillValue(info->reqSkill) < info->reqSkillRank)
+        return 0;
 
     // skip no stats trinkets
-    if (info->weights[specId] == 1 && info->quality > ITEM_QUALITY_RARE && (
+    if (info->weights[specId] == 1 && (
         info->slot == EQUIPMENT_SLOT_NECK ||
         info->slot == EQUIPMENT_SLOT_TRINKET1 ||
         info->slot == EQUIPMENT_SLOT_TRINKET2 ||
@@ -3063,9 +3094,7 @@ uint32 RandomItemMgr::GetLiveStatWeight(Player* player, uint32 itemId, uint32 sp
 
 void RandomItemMgr::BuildEquipCache()
 {
-    uint32 maxLevel = sPlayerbotAIConfig.randomBotMaxLevel;
-    if (maxLevel > sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL))
-        maxLevel = sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL);
+    uint32 maxLevel = DEFAULT_MAX_LEVEL;
 
     auto results = CharacterDatabase.PQuery("select clazz, spec, lvl, slot, quality, item from ai_playerbot_equip_cache");
     if (results)
@@ -3171,7 +3200,7 @@ void RandomItemMgr::BuildEquipCache()
                                     continue;
 
                                 // only accept "useless" items if bot level <= 30
-                                if (statWeight == 1 && level > 20)
+                                if (statWeight == 1 && level > 30)
                                     continue;
 
                                 uint32 minLevel = GetMinLevelFromCache(itemId);
