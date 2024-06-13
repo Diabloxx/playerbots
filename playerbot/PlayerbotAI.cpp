@@ -888,12 +888,12 @@ void PlayerbotAI::OnDeath()
     {
         StopMoving();
 
-        //Death Count to prevent skeleton piles
         Player* master = GetMaster();
+        AiObjectContext* context = aiObjectContext;
         if (!HasActivePlayerMaster() && !bot->InBattleGround())
         {
-            uint32 dCount = aiObjectContext->GetValue<uint32>("death count")->Get();
-            aiObjectContext->GetValue<uint32>("death count")->Set(++dCount);
+
+            SET_AI_VALUE(uint32, "death count", AI_VALUE(uint32, "death count") + 1);
 
             if (sPlayerbotAIConfig.hasLog("deaths.csv"))
             {
@@ -955,12 +955,14 @@ void PlayerbotAI::OnDeath()
             }
         }
 
-        aiObjectContext->GetValue<Unit*>("current target")->Set(nullptr);
-        aiObjectContext->GetValue<Unit*>("enemy player target")->Set(nullptr);
-        aiObjectContext->GetValue<Unit*>("pull target")->Set(nullptr);
-        aiObjectContext->GetValue<ObjectGuid>("attack target")->Set(ObjectGuid());
-        aiObjectContext->GetValue<LootObject>("loot target")->Set(LootObject());
-        aiObjectContext->GetValue<time_t>("combat start time")->Set(0);
+        SET_AI_VALUE(Unit*, "current target", nullptr);
+        SET_AI_VALUE(Unit*, "enemy player target", nullptr);
+        SET_AI_VALUE(Unit*, "pull target", nullptr);
+        SET_AI_VALUE(ObjectGuid, "attack target", ObjectGuid());
+        SET_AI_VALUE(LootObject, "loot target", LootObject());
+        SET_AI_VALUE(time_t, "combat start time", 0);
+        SET_AI_VALUE2(bool, "manual bool", "enemies near corpse", false);
+        SET_AI_VALUE2(bool, "manual bool", "enemies near graveyard", false);
         ChangeEngine(BotState::BOT_STATE_DEAD);
     }
 }
@@ -5503,8 +5505,9 @@ std::list<Item*> PlayerbotAI::InventoryParseItems(std::string text, IterateItems
     std::set<Item*> found;
     size_t pos = text.find(" ");
     int count = pos != std::string::npos ? atoi(text.substr(pos + 1).c_str()) : 1;
-    if (count < 1) count = 1;
+    if (count < 1) count = 999;
 
+    //Look for item id's in the command.
     ItemIds ids = GetChatHelper()->parseItems(text);
     if (!ids.empty())
     {
@@ -5514,7 +5517,11 @@ std::list<Item*> PlayerbotAI::InventoryParseItems(std::string text, IterateItems
             VISIT;
         }
 
-        RETURN_SORT_FOUND;
+        //We want to stop looking if we found items from links or ids. However if the command is like "all 3" itemId 3 will be found. If so keep looking for more items.
+        if (text.find("Hfound:") != -1 || text.find("Hitem:") != -1 || pos == std::string::npos)
+        {
+            RETURN_SORT_FOUND;
+        }
     }
 
     if (text == "all" || text == "*")
@@ -5559,8 +5566,7 @@ std::list<Item*> PlayerbotAI::InventoryParseItems(std::string text, IterateItems
         VISIT_MASK(IterateItemsMask::ITERATE_ITEMS_IN_BUYBACK);
         RETURN_SORT_FOUND;
     }
-
-    if (text == "food" || text == "conjured food")
+    else if (text == "food" || text == "conjured food")
     {
         FindFoodVisitor visitor(bot, 11, (text == "conjured food"));
         VISIT;
@@ -5612,7 +5618,7 @@ std::list<Item*> PlayerbotAI::InventoryParseItems(std::string text, IterateItems
     else if (text.find("usage ") == 0)
     {
         FindItemUsageVisitor visitor(bot, ItemUsage(stoi(text.substr(6))));
-        VISIT;
+        VISIT_MASK(IterateItemsMask::ITERATE_ITEMS_IN_BAGS);
     }
     else if (text == "tradeskill")
     {
@@ -5627,12 +5633,12 @@ std::list<Item*> PlayerbotAI::InventoryParseItems(std::string text, IterateItems
     else if (text == "vendor")
     {
         FindItemUsageVisitor visitor(bot, ItemUsage::ITEM_USAGE_VENDOR);
-        VISIT;
+        VISIT_MASK(IterateItemsMask::ITERATE_ITEMS_IN_BAGS);
 
         if (AI_VALUE(uint8, "bag space") > 80 && !urand(0, 10))
         {
             FindItemUsageVisitor visitor(bot, ItemUsage::ITEM_USAGE_AH);
-            VISIT;
+            VISIT_MASK(IterateItemsMask::ITERATE_ITEMS_IN_BAGS);
         }
     }
 

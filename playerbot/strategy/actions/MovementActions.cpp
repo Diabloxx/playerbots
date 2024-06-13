@@ -396,7 +396,7 @@ bool MovementAction::MoveTo(uint32 mapId, float x, float y, float z, bool idle, 
 
                     for (auto node : route.getNodes())
                     {
-                        routeList += node->getName() + "-";
+                        routeList += node->getName() + (node == route.getNodes().back() ? "" : "-");
                     }
 
                     if (!routeList.empty())
@@ -417,11 +417,11 @@ bool MovementAction::MoveTo(uint32 mapId, float x, float y, float z, bool idle, 
 
     if (movePath.empty() && movePosition.distance(startPosition) > maxDist)
     {
+        PathFinder pathfinder(mover);
         //Use standard pathfinder to find a route. 
-        PathFinder path(mover);
-        path.calculate(movePosition.getX(), movePosition.getY(), movePosition.getZ(), false);
-        PathType type = path.getPathType();
-        PointsArray& points = path.getPath();
+        pathfinder.calculate(movePosition.getX(), movePosition.getY(), movePosition.getZ(), false);
+        PathType type = pathfinder.getPathType();
+        PointsArray& points = pathfinder.getPath();
         movePath.addPath(startPosition.fromPointsArray(points));
     }
 
@@ -507,18 +507,25 @@ bool MovementAction::MoveTo(uint32 mapId, float x, float y, float z, bool idle, 
                 ai->Unmount();
             }
 
-            std::list<ObjectGuid> gos = *ai->GetAiObjectContext()->GetValue<std::list<ObjectGuid> >("nearest game objects no los");
-            for (std::list<ObjectGuid>::iterator i = gos.begin(); i != gos.end(); ++i)
+            std::list<ObjectGuid> gos = *context->GetValue<std::list<ObjectGuid> >("nearest game objects");
+            for (std::list<ObjectGuid>::iterator i = gos.begin(); i != gos.end(); i++)
             {
                 GameObject* go = ai->GetGameObject(*i);
-                if (go && go->GetGOInfo()->id == entry)
-                {
-                    std::unique_ptr<WorldPacket> packet(new WorldPacket(CMSG_GAMEOBJ_USE));
-                    *packet << go->GetObjectGuid();
-                    bot->GetSession()->QueuePacket(std::move(packet));
-                    return true;
-                }
+                if (!go)
+                    continue;
+
+                if (go->GetEntry() != entry)
+                    continue;
+
+                if (!bot->GetGameObjectIfCanInteractWith(go->GetObjectGuid(), MAX_GAMEOBJECT_TYPE))
+                    continue;
+
+                std::unique_ptr<WorldPacket> packet(new WorldPacket(CMSG_GAMEOBJ_USE));
+                *packet << *i;
+                bot->GetSession()->QueuePacket(std::move(packet));
+                return true;
             }
+
             return false;
         }
 

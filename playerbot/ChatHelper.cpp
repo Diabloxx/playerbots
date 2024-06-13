@@ -717,7 +717,7 @@ bool ChatHelper::parseItemClass(std::string text, uint32 *itemClass, uint32 *ite
     return false;
 }
 
-uint32 ChatHelper::parseSlot(std::string text)
+uint32 ChatHelper::parseSlot(const std::string& text)
 {
     if (slots.find(text) != slots.end())
         return slots[text];
@@ -799,6 +799,9 @@ std::string ChatHelper::formatAngle(float angle)
     std::vector<std::string> headings = { "north", "north west", "west", "south west", "south", "south east", "east", "north east" };
 
     float headingAngle = angle / M_PI_F * 180;
+
+    if (headingAngle < 0)
+        headingAngle += 360;
 
     return headings[int32(round(headingAngle / 45)) % 8];
 }

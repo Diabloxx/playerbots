@@ -761,6 +761,7 @@ AiPlayerbot.PerfMonEnabled = 0
 # AiPlayerbot.SelfBotLevel = 1
 
 # Account/character names that are either, always online as bot (SelfBotLevel < 4) or prevented from being always online as bot (SelfBotLevel = 4) 
+# When AiPlayerbot.BotAutologin is set to 2 these characters only log in on player (on the same account) logs in.
 # AiPlayerbot.ToggleAlwaysOnlineAccounts =
 # AiPlayerbot.ToggleAlwaysOnlineChars =
 
@@ -770,7 +771,7 @@ AiPlayerbot.PerfMonEnabled = 0
 # AiPlayerbot.AllowedLogFiles = 
 
 # Filters certain actions from showing up in 'nc +debug' and 'nc +debug action'
-# AiPlayerbot.DebugFilter = add gathering loot,check values,emote,check mount state
+# AiPlayerbot.DebugFilter = add gathering loot,check values,emote,check mount state,jump
 
 # Random password: Randombot accounts get created with a randompassword instead of equal to their account name.
 # AiPlayerbot.RandomBotRandomPassword = 1

@@ -97,7 +97,7 @@ void LootObject::Refresh(Player* bot, ObjectGuid guid)
 #else
         /*if (!guid.IsEmpty())
         {
-            for (auto& entry : GAI_VALUE2(std::list<int32>, "item drop list", -go->GetEntry()))
+            for (auto& entry : GAI_VALUE2(std::list<int32>, "item drop list", -1*uint(go->GetEntry())))
             {
                 if (IsNeededForQuest(bot, entry))
                 {
@@ -248,6 +248,26 @@ bool LootObject::IsLootPossible(Player* bot)
                     if (!go->ActivateToQuest(bot))
                     {
                         return false;
+                    }
+                }
+            }
+            
+            // herb-like quest objects
+            if (skillId == SKILL_HERBALISM && reqSkillValue == 1)
+            {
+                if (sObjectMgr.IsGameObjectForQuests(guid.GetEntry()))
+                {
+                    if (go->ActivateToQuest(bot))
+                    {
+                        bool hasQuestItems = false;
+                        for (auto& entry : GAI_VALUE2(std::list<uint32>, "entry loot list", -1*int(go->GetEntry())))
+                        {
+                            if (IsNeededForQuest(bot, entry))
+                            {
+                                hasQuestItems = true;
+                            }
+                        }
+                        return hasQuestItems || go->GetLootState() != GO_READY;
                     }
                 }
             }

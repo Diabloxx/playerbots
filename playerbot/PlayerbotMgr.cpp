@@ -521,6 +521,24 @@ std::string PlayerbotHolder::ProcessBotCommand(std::string cmd, ObjectGuid guid,
                 factory.EquipGear();
                 return "random gear equipped";
             }
+            if (cmd == "gear=green" || cmd == "gear=uncommon")
+            {
+                PlayerbotFactory factory(bot, bot->GetLevel(), ITEM_QUALITY_UNCOMMON);
+                factory.EquipGear();
+                return "random green gear equipped";
+            }
+            if (cmd == "gear=blue" || cmd == "gear=rare")
+            {
+                PlayerbotFactory factory(bot, bot->GetLevel(), ITEM_QUALITY_RARE);
+                factory.EquipGear();
+                return "random blue gear equipped";
+            }
+            if (cmd == "gear=purple" || cmd == "gear=epic")
+            {
+                PlayerbotFactory factory(bot, bot->GetLevel(), ITEM_QUALITY_EPIC);
+                factory.EquipGear();
+                return "random epic gear equipped";
+            }
             if (cmd == "equip=upgrade" || cmd == "gear=upgrade" || cmd == "upgrade" || cmd == "equip=sync")
             {
                 const bool syncWithMaster = cmd == "equip=sync";
@@ -1262,7 +1280,7 @@ void PlayerbotMgr::OnPlayerLogin(Player* player)
 
     uint32 accountId = player->GetSession()->GetAccountId();
     auto results = CharacterDatabase.PQuery(
-        "SELECT name FROM characters WHERE account = '%u'",
+        "SELECT guid, name FROM characters WHERE account = '%u'",
         accountId);
     if (results)
     {
@@ -1272,7 +1290,8 @@ void PlayerbotMgr::OnPlayerLogin(Player* player)
         {
             Field* fields = results->Fetch();
             if (first) first = false; else out << ",";
-            out << fields[0].GetString();
+            if(sPlayerbotAIConfig.botAutologin == 2 && !sPlayerbotAIConfig.IsFreeAltBot(fields[0].GetUInt32())) continue;
+            out << fields[1].GetString();
         } while (results->NextRow());
 
         HandlePlayerbotCommand(out.str().c_str(), player);
