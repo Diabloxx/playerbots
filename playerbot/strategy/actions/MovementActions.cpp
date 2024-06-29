@@ -745,14 +745,13 @@ bool MovementAction::MoveTo(uint32 mapId, float x, float y, float z, bool idle, 
             }
             else
             {
-                if (sServerFacade.IsSpellReady(bot, entry) && (!bot->IsFlying() || WorldPosition(bot).currentHeight() < 10.0f))
+                if (sServerFacade.IsSpellReady(bot, entry) && (!bot->IsFlying() || WorldPosition(bot).currentHeight() < 10.0f) && AI_VALUE2(bool, "has reagents for", entry))
                     if (ai->DoSpecificAction("cast", Event("rpg action", std::to_string(entry)), true))
                         return true;
 
                 movePath.clear();
                 AI_VALUE(LastMovement&, "last movement").setPath(movePath);
                 return false;
-
             }
         }
 
@@ -2214,7 +2213,7 @@ bool MoveRandomAction::isUseful()
 
 bool MoveToAction::Execute(Event& event)
 {
-    std::list<GuidPosition> guidList = AI_VALUE(std::list<GuidPosition>, getQualifier());
+    std::list<GuidPosition> guidList = AI_VALUE_SAFE(std::list<GuidPosition>, getQualifier());
 
     if (guidList.empty())
         return false;
