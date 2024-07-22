@@ -121,11 +121,11 @@ std::string QuestRelationTravelDestination::getTitle() {
     std::ostringstream out;
 
     if (relation == 0)
-        out << "questgiver";
+        out << "questgiver ";
     else
-        out << "questtaker";
+        out << "questtaker ";
 
-    out << " " << ChatHelper::formatWorldEntry(entry);
+    out << ChatHelper::formatWorldEntry(entry);
     return out.str();
 }
 
@@ -293,6 +293,18 @@ bool RpgTravelDestination::isActive(Player* bot)
         }
     }
 
+    //City & Pvp baracks
+    if (points.front()->getMapId() == bot->GetMapId() && points.front()->hasAreaFlag(AREA_FLAG_CAPITAL) && !points.front()->hasFaction(bot->GetTeam()))
+        return false;
+
+    //Horde pvp baracks
+    if (points.front()->getMapId() == 450 && bot->GetTeam() == ALLIANCE)
+        return false;
+
+    //Alliance pvp baracks
+    if (points.front()->getMapId() == 449 && bot->GetTeam() == HORDE)
+        return false;
+
     return !GuidPosition(HIGHGUID_UNIT, entry).IsHostileTo(bot);
 }
 
@@ -303,7 +315,7 @@ std::string RpgTravelDestination::getTitle() {
     if(entry > 0)
         out << "rpg npc ";
 
-    out << " " << ChatHelper::formatWorldEntry(entry);
+    out << ChatHelper::formatWorldEntry(entry);
 
     return out.str();
 }
@@ -370,7 +382,7 @@ std::string GrindTravelDestination::getTitle() {
 
     out << "grind mob ";
 
-    out << " " << ChatHelper::formatWorldEntry(entry);
+    out << ChatHelper::formatWorldEntry(entry);
 
     return out.str();
 }
@@ -423,6 +435,15 @@ bool BossTravelDestination::isActive(Player* bot)
             return false;
 
     }
+
+    //Ragefire casm
+    if (points.front()->getMapId() == 389 && bot->GetTeam() == ALLIANCE)
+        return false;
+
+    //Stockades
+    if (points.front()->getMapId() == 34 && bot->GetTeam() == HORDE)
+        return false;
+
     WorldPosition botPos(bot);
 
     if (!isOut(botPos))
@@ -445,9 +466,9 @@ bool BossTravelDestination::isActive(Player* bot)
 std::string BossTravelDestination::getTitle() {
     std::ostringstream out;
 
-    out << "boss mob";
+    out << "boss mob ";
 
-    out << " " << ChatHelper::formatWorldEntry(entry);
+    out << ChatHelper::formatWorldEntry(entry);
 
     return out.str();
 }

@@ -8,10 +8,11 @@
 #include "playerbot/RandomItemMgr.h"
 #include "playerbot/ServerFacade.h"
 
-#include "AuctionHouseBot/AuctionHouseBot.h"
-
-
 using namespace ai;
+
+#ifdef BUILD_AHBOT
+#include "AuctionHouseBot/AuctionHouseBot.h"
+#endif
 
 ItemQualifier::ItemQualifier(std::string qualifier, bool linkQualifier)
 {
@@ -306,8 +307,9 @@ ItemUsage ItemUsageValue::Calculate()
     //VENDOR/AH
     if (proto->SellPrice > 0)
     {
-        AuctionHouseBotItemData itemInfo = sAuctionHouseBot.GetItemData(proto->ItemId);
-        if (itemInfo.Value > ((int32)proto->SellPrice) * 1.5f)
+        uint32 value = GetItemValue(proto);
+
+        if (value > ((int32)proto->SellPrice) * 1.5f)
         {
             if(proto->Bonding == NO_BIND)
                 return ItemUsage::ITEM_USAGE_AH;
@@ -832,4 +834,22 @@ uint32 ItemUsageValue::GetRecipeSpell(ItemPrototype const* proto)
         }
     }
     return 0;
+}
+
+uint32 ItemUsageValue::GetItemValue(ItemPrototype const* proto)
+{
+    uint32 value;
+#ifdef BUILD_AHBOT
+    /* Waiting for prs
+    if (sAuctionHouseBot.IsInitialized())
+    {*/
+        AuctionHouseBotItemData itemInfo = sAuctionHouseBot.GetItemData(proto->ItemId);
+        value = itemInfo.Value;
+    /*}
+    else*/
+#else
+        value = (proto->BuyPrice * proto->Quality * 80) / 100;
+#endif
+
+    return value;
 }

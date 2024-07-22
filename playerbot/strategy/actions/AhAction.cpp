@@ -5,7 +5,6 @@
 #include "playerbot/strategy/values/ItemCountValue.h"
 #include "playerbot/RandomItemMgr.h"
 #include "playerbot/strategy/values/BudgetValues.h"
-#include <AuctionHouseBot/AuctionHouseBot.h>
 
 using namespace ai;
 
@@ -133,7 +132,7 @@ bool AhAction::PostItem(Player* requester, Item* item, uint32 price, Unit* aucti
 
 uint32 AhAction::GetSellPrice(ItemPrototype const* proto)
 {
-    uint32 price = sAuctionHouseBot.GetItemData(proto->ItemId).Value;
+    uint32 price = ItemUsageValue::GetItemValue(proto);
 
     if (!price)
         price = auctionbot.GetSellPrice(proto);

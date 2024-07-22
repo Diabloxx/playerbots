@@ -195,7 +195,7 @@ bool PetitionOfferNearbyAction::Execute(Event& event)
         if (sServerFacade.GetDistance2d(bot, player) > sPlayerbotAIConfig.sightDistance)
             continue;
 
-        if (sPlayerbotAIConfig.inviteChat && sServerFacade.GetDistance2d(bot, player) < sPlayerbotAIConfig.spellDistance && sRandomPlayerbotMgr.IsFreeBot(bot))
+        if (sPlayerbotAIConfig.inviteChat && sServerFacade.GetDistance2d(bot, player) < sPlayerbotAIConfig.spellDistance && (sRandomPlayerbotMgr.IsFreeBot(bot) || !ai->HasActivePlayerMaster()))
         {
             std::map<std::string, std::string> placeholders;
             placeholders["%name"] = player->GetName();
@@ -273,6 +273,8 @@ bool PetitionTurnInAction::Execute(Event& event)
     //Select a new target to travel to. 
     TravelTarget newTarget = TravelTarget(ai);
 
+    ai->TellDebug(requester, "Handing in guild petition", "debug travel");
+
     bool foundTarget = SetNpcFlagTarget(requester, &newTarget, { UNIT_NPC_FLAG_PETITIONER });
 
     if (!foundTarget || !newTarget.isActive())
@@ -322,6 +324,8 @@ bool BuyTabardAction::Execute(Event& event)
 
     //Select a new target to travel to. 
     TravelTarget newTarget = TravelTarget(ai);
+
+    ai->TellDebug(requester, "Buying a tabard", "debug travel");
 
     bool foundTarget = SetNpcFlagTarget(requester, &newTarget, { UNIT_NPC_FLAG_TABARDDESIGNER }, "Tabard Vendor", { 5976 });
 

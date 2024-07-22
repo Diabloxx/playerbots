@@ -534,7 +534,7 @@ bool UseAction::UseItemInternal(Player* requester, uint32 itemId, Unit* unit, Ga
             else if (gameObject && gameObject->IsSpawned())
             {
                 gameObjectTarget = gameObject;
-                targets.setDestination(unit->GetPositionX(), unit->GetPositionY(), unit->GetPositionZ());
+                targets.setDestination(gameObject->GetPositionX(), gameObject->GetPositionY(), gameObject->GetPositionZ());
                 validTarget = true;
             }
         }
@@ -847,6 +847,14 @@ bool UseAction::UseGameObject(Player* requester, Event& event, GameObject* gameO
             std::ostringstream out; out << "I can't open " << chat->formatGameobject(gameObject);
             ai->TellPlayerNoFacing(requester, out.str(), PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
             return false;
+        }
+    }
+    else if (gameObject->GetGoType() == GAMEOBJECT_TYPE_QUESTGIVER)
+    {
+        if (gameObject->ActivateToQuest(bot))
+        {
+            Event event("use game object", gameObject->GetObjectGuid(), bot);
+            ai->DoSpecificAction("talk to quest giver", event, true);
         }
     }
 

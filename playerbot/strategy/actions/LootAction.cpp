@@ -310,6 +310,20 @@ bool StoreLootAction::Execute(Event& event)
         ItemPrototype const *proto = sItemStorage.LookupEntry<ItemPrototype>(itemid);
         if (!proto)
             continue;
+
+        Loot* loot = sLootMgr.GetLoot(bot);
+
+        if (!loot)
+            continue;
+
+        LootItem* lootItem = loot->GetLootItemInSlot(itemindex);
+
+        if (!lootItem)
+            continue;
+
+        //have no right to loot
+        if (lootItem->isBlocked || lootItem->GetSlotTypeForSharedLoot(bot, loot) == MAX_LOOT_SLOT_TYPE)
+            continue;
        
         Player* master = ai->GetMaster();
         if (sRandomPlayerbotMgr.IsRandomBot(bot) && master)
@@ -333,7 +347,7 @@ bool StoreLootAction::Execute(Event& event)
             ai->TellPlayerNoFacing(requester, BOT_TEXT2("loot_command", args), PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
         }
 
-        if (sPlayerbotAIConfig.guildFeedbackRate && frand(0, 100) <= sPlayerbotAIConfig.guildFeedbackRate && bot->GetGuildId() && !urand(0, 10) && proto->Quality >= ITEM_QUALITY_RARE && sRandomPlayerbotMgr.IsFreeBot(bot))
+        if (sPlayerbotAIConfig.guildFeedbackRate && frand(0, 100) <= sPlayerbotAIConfig.guildFeedbackRate && bot->GetGuildId() && !urand(0, 10) && proto->Quality >= ITEM_QUALITY_RARE && (sRandomPlayerbotMgr.IsFreeBot(bot) || !ai->HasActivePlayerMaster()))
         {
             Guild* guild = sGuildMgr.GetGuildById(bot->GetGuildId());
 

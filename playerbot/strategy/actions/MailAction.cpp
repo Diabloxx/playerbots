@@ -75,6 +75,14 @@ private:
 class TakeMailProcessor : public MailProcessor
 {
 public:
+
+    bool Before(Player* requester, PlayerbotAI* ai) override
+    {
+        copper = 0;
+        items.clear();
+        return true;
+    }
+
     bool Process(Player* requester, int index, Mail* mail, PlayerbotAI* ai, Event& event) override
     {
         Player* bot = ai->GetBot();
@@ -83,9 +91,6 @@ public:
             ai->TellError(requester, "Not enough bag space");
             return false;
         }
-
-        copper = 0;
-        items.clear();
 
         ObjectGuid mailbox = FindMailbox(ai);
         if (mail->money)
@@ -129,7 +134,7 @@ public:
 
                 if (event.getSource() == "rpg action")
                 {
-                    items.push_back(ChatHelper::formatItem(item));
+                    items.push_back(ChatHelper::formatItem(item, item->GetCount()));
                 }
                 else
                 {
@@ -153,7 +158,7 @@ public:
             std::map<std::string, std::string> args;
             args["%itemcount"] = std::to_string(items.size());
 
-            std::vector<std::string> lines = { BOT_TEXT2("|cff00ff00%itemcount items recieved from mail:", args) };
+            std::vector<std::string> lines = { BOT_TEXT2("|cff00ff00%itemcount items recieved from mail: ", args) };
             for (auto& item : items)
             {
                 if (lines.back().size() + item.size() > 256)

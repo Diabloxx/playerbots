@@ -173,7 +173,8 @@ enum class BotTypeNumber : uint8
     ACTIVITY_TYPE_NUMBER = 1,
     GROUPER_TYPE_NUMBER = 2,
     GUILDER_TYPE_NUMBER = 3,
-    CHATFILTER_NUMBER = 4
+    CHATFILTER_NUMBER = 4 ,
+    DUMMY_ATTACK_NUMBER = 5
 };
 
 enum class GrouperType : uint8
@@ -337,6 +338,7 @@ public:
     bool TellPlayer(Player* player, std::string text, PlayerbotSecurityLevel securityLevel = PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, bool isPrivate = true, bool ignoreSilent = false);
     bool TellPlayerNoFacing(Player* player, std::ostringstream& stream, PlayerbotSecurityLevel securityLevel = PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, bool isPrivate = true, bool noRepeat = true, bool ignoreSilent = false) { return TellPlayerNoFacing(player, stream.str(), securityLevel, isPrivate, noRepeat, ignoreSilent); }
     bool TellPlayerNoFacing(Player* player, std::string text, PlayerbotSecurityLevel securityLevel = PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, bool isPrivate = true, bool noRepeat = true, bool ignoreSilent = false);
+    bool TellDebug(Player* player, std::string text, std::string strategy = "debug", BotState state = BotState::BOT_STATE_NON_COMBAT) { if (HasStrategy(strategy, state)) return TellPlayerNoFacing(player, text); return false; }
     bool TellError(Player* player, std::string text, PlayerbotSecurityLevel securityLevel = PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, bool ignoreSilent = false);
     void SpellInterrupted(uint32 spellid);
     int32 CalculateGlobalCooldown(uint32 spellid);
@@ -537,6 +539,8 @@ public:
 
     bool CanEnterArea(const AreaTrigger* area);
     void Unmount();
+
+    void QueuePacket(WorldPacket& pkt);
 
 private:
     bool UpdateAIReaction(uint32 elapsed, bool minimal, bool isStunned);
